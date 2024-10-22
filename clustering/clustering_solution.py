@@ -9,15 +9,15 @@ from sklearn.cluster import DBSCAN
 from sklearn.neighbors import NearestNeighbors
 import statistics
 import category_encoders as ce
+from scipy.spatial import Voronoi, voronoi_plot_2d
+from sklearn.preprocessing import OneHotEncoder
+
 
 # %%
 pd.set_option('display.max_columns', 200)
 
 # %%
-df = pd.read_csv(r'C:\Users\trucn\Documents\repositories\ds-mod-2-0924-code-solutions\clustering\clustering\imports-85.data', header = None)
-
-# %%
-df
+df = pd.read_csv(r"C:\Users\trucn\Documents\repositories\ds-mod-2-0924-code-solutions\clustering\imports-85.data", header = None)
 
 # %%
 # You should only input the column names that you need, not all of them!
@@ -138,6 +138,22 @@ model_scaled = KMeans(n_clusters = 3)
 model_scaled.fit_transform(X_scaled)
 
 # %%
+# Setting up the Voronoi diagram
+centers = model_scaled.cluster_centers_
+points = np.array(X_scaled)
+vor = Voronoi(points)
+
+# %%
+# plt.scatter(centers[:,0], centers[:,1], marker = 'X', s = 250, c = 'lime')
+# fig = voronoi_plot_2d(vor, plt.gca())
+
+# %%
+# Voronoi diagram
+voronoi_plot_2d(vor, show_vertices = False);
+plt.scatter(centers[:,0], centers[:,1], marker = 'X', s = 250, c = 'lime')
+
+# %%
+# Original plot made in first submission
 plt.scatter(X_scaled[25], X_scaled[21], c = model_scaled.labels_)
 plt.scatter(model_scaled.cluster_centers_[:,0], model_scaled.cluster_centers_[:,1], marker = 'x', c = 'r')
 
@@ -173,7 +189,7 @@ plt.scatter(X_scaled[25], X_scaled[21], c = labs)
 # # 3. Using mlb_batting_cleaned.csv, write a function that takes a player's name and shows the 2 closest players using the nearest neighbors algorithm.
 
 # %%
-mlb = pd.read_csv(r'C:\Users\trucn\Documents\repositories\ds-mod-2-0924-code-solutions\clustering\clustering\mlb_batting_cleaned.csv')
+mlb = pd.read_csv(r"C:\Users\trucn\Documents\repositories\ds-mod-2-0924-code-solutions\clustering\mlb_batting_cleaned.csv")
 
 # %%
 # Try utilizing np.where somewhere in thi
@@ -184,28 +200,18 @@ mlb
 mlb2 = mlb.copy()
 
 # %%
-# OHE Tm column
 ohe = ce.OneHotEncoder(use_cat_names = True)
-ohe.fit(mlb2['Tm'])
-tm_ohe = ohe.transform(mlb2['Tm'])
-
-# %%
-# OHE Lg column
-ohe.fit(mlb2['Lg'])
-lg_ohe = ohe.transform(mlb2['Lg'])
+ohe.fit(mlb2[['Tm', 'Lg']])
+tm_lg_ohe = ohe.transform(mlb2[['Tm', 'Lg']])
 
 # %%
 # Concat the newly-encoded columns into original dataframe
 
-mlb2 = pd.concat([mlb2, tm_ohe, lg_ohe], axis = 1)
+mlb2 = pd.concat([mlb2, tm_lg_ohe], axis = 1)
 
 # %%
-# Drop the two original columns that were encoded
-mlb2 = mlb2.drop(columns = ['Tm', 'Lg'])
-
-# %%
-# Drop Name
-mlb2 = mlb2.drop(columns = 'Name')
+# Drop the two original columns that were encoded, as well as the name
+mlb2 = mlb2.drop(columns = ['Name', 'Tm', 'Lg'])
 
 # %%
 # Min-max scale all the columns
@@ -249,14 +255,11 @@ def nearest_two_players(data, player_name):
     
     # OHE Tm and Lg
     ohe = ce.OneHotEncoder(use_cat_names = True)
-    ohe.fit(data['Tm'])
-    tm_ohe = ohe.transform(data['Tm'])
-
-    ohe.fit(data['Lg'])
-    lg_ohe = ohe.transform(data['Lg'])
-
+    ohe.fit(data[['Tm', 'Lg']])
+    tm_lg_ohe = ohe.transform(data[['Tm', 'Lg']])
+    
     # Concat the encoded Tm and Lg columns to original dataframe
-    data = pd.concat([data, tm_ohe, lg_ohe], axis = 1)
+    data = pd.concat([data, tm_lg_ohe], axis = 1)
     
     # Drop Name, Tm, and Lg
     data = data.drop(columns = ['Name', 'Tm', 'Lg'])
